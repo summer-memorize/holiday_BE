@@ -1,11 +1,13 @@
 const express = require("express");
 const morgan = require("morgan");
+const connect = require("./schemas");
 require("dotenv").config();
 
 const app = express();
 
 const port = process.env.PORT || 8888;
 app.set("port", port);
+connect();
 
 app.use(morgan("dev"));
 app.use(express.json());
