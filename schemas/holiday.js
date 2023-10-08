@@ -2,24 +2,18 @@ const mongoose = require("mongoose");
 
 const { Schema } = mongoose;
 const holidaySchema = new Schema({
-  name: {
+  dateName: {
     // 공휴일 이름(예: 추석, 개천절)
     type: String,
     required: true,
   },
-  year: {
-    // 공휴일이 속한 연도(예: 2019)
-    type: Number,
-    required: true,
-  },
-  month: {
-    // 공휴일이 속한 월(예: 9)
-    type: Number,
+  isHoliday: {
+    // 휴일 여부(단순 기념일의 경우 쉬지 않는 경우도 있음)
+    type: Boolean,
     required: true,
   },
   date: {
-    // 전체 날짜(yyyymmdd)
-    type: String,
+    type: Date,
     required: true,
   },
 });
