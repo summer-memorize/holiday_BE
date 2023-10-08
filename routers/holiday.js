@@ -2,6 +2,7 @@ const express = require("express");
 // const axios = require("axios");
 // const fetch = require("node-fetch");
 const request = require("request");
+const joi = require("joi");
 const Holiday = require("../schemas/holiday");
 const SaveResult = require("../schemas/saveResult");
 const router = express.Router();
@@ -10,6 +11,27 @@ const openApiKey = process.env.OPEN_API_KEY;
 
 router.get("/", async (req, res, next) => {
   try {
+    const yearValidation = joi
+      .string()
+      .min(4)
+      .max(4)
+      .regex(/^(19[0-9]{2}|2[0-2][0-9]{2}|2300)$/)
+      .trim()
+      .required();
+    const monthValidation = joi
+      .string()
+      .min(2)
+      .max(2)
+      .regex(/^(0[1-9]|1[0-2])$/)
+      .trim()
+      .required();
+    const holidaySchema = joi.object({
+      year: yearValidation,
+      month: monthValidation,
+    });
+
+    const { year, month } = await holidaySchema.validateAsync(req.query);
+
     const yyyymmddNumToDate = num => {
       const year = parseInt(num / 10000);
       const month = parseInt((num % 10000) / 100);
@@ -21,14 +43,14 @@ router.get("/", async (req, res, next) => {
     let anniversaryUrl = "http://apis.data.go.kr/B090041/openapi/service/SpcdeInfoService/getAnniversaryInfo";
     let queryParams = "?" + encodeURIComponent("serviceKey") + "=" + openApiKey;
     queryParams += "&" + encodeURIComponent("numOfRows") + "=" + encodeURIComponent("50"); /* */
-    queryParams += "&" + encodeURIComponent("solYear") + "=" + encodeURIComponent(req.query.year); /* */
-    queryParams += "&" + encodeURIComponent("solMonth") + "=" + encodeURIComponent(req.query.month); /* */
+    queryParams += "&" + encodeURIComponent("solYear") + "=" + encodeURIComponent(year); /* */
+    queryParams += "&" + encodeURIComponent("solMonth") + "=" + encodeURIComponent(month); /* */
     queryParams += "&" + encodeURIComponent("_type") + "=" + encodeURIComponent("json"); /* */
 
     // 해당 month 저장 됐는지 확인
     const saveResult = await SaveResult.findOne({
-      year: req.query.year,
-      month: req.query.month,
+      year,
+      month,
     });
 
     // request 2개 완료 여부 체크
@@ -64,7 +86,7 @@ router.get("/", async (req, res, next) => {
 
             // saveResult findOneAndUpdate
             await SaveResult.findOneAndUpdate(
-              { year: req.query.year, month: req.query.month },
+              { year, month },
               { isRestDaySaved: true },
               { new: true, upsert: true, setDefaultsOnInsert: true }
             );
@@ -76,8 +98,8 @@ router.get("/", async (req, res, next) => {
             if (isComplete === 2) {
               const holidayInfo = await Holiday.find({
                 date: {
-                  $gte: new Date(req.query.year, req.query.month - 2, 15),
-                  $lte: new Date(req.query.year, req.query.month, 15),
+                  $gte: new Date(year, month - 2, 15),
+                  $lte: new Date(year, month, 15),
                 },
               }).sort("date");
 
@@ -104,7 +126,7 @@ router.get("/", async (req, res, next) => {
 
       //   // saveResult findOneAndUpdate
       //   await SaveResult.findOneAndUpdate(
-      //     { year: req.query.year, month: req.query.month },
+      //     { year, month },
       //     { isRestDaySaved: true },
       //     { new: true, upsert: true, setDefaultsOnInsert: true }
       //   );
@@ -144,7 +166,7 @@ router.get("/", async (req, res, next) => {
 
             // saveResult findOneAndUpdate
             await SaveResult.findOneAndUpdate(
-              { year: req.query.year, month: req.query.month },
+              { year, month },
               { isAnniversarySaved: true },
               { new: true, upsert: true, setDefaultsOnInsert: true }
             );
@@ -156,8 +178,8 @@ router.get("/", async (req, res, next) => {
             if (isComplete === 2) {
               const holidayInfo = await Holiday.find({
                 date: {
-                  $gte: new Date(req.query.year, req.query.month - 2, 15),
-                  $lte: new Date(req.query.year, req.query.month, 15),
+                  $gte: new Date(year, month - 2, 15),
+                  $lte: new Date(year, month, 15),
                 },
               }).sort("date");
 
@@ -184,7 +206,7 @@ router.get("/", async (req, res, next) => {
 
       //   // saveResult findOneAndUpdate;
       //   await SaveResult.findOneAndUpdate(
-      //     { year: req.query.year, month: req.query.month },
+      //     { year, month },
       //     { isAnniversarySaved: true },
       //     { new: true, upsert: true, setDefaultsOnInsert: true }
       //   );
@@ -206,8 +228,8 @@ router.get("/", async (req, res, next) => {
     if (saveResult && saveResult.isRestDaySaved && saveResult.isAnniversarySaved) {
       const holidayInfo = await Holiday.find({
         date: {
-          $gte: new Date(req.query.year, req.query.month - 2, 15),
-          $lte: new Date(req.query.year, req.query.month, 15),
+          $gte: new Date(year, month - 2, 15),
+          $lte: new Date(year, month, 15),
         },
       }).sort("date");
 
