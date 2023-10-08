@@ -167,7 +167,7 @@ router.get("/", async (req, res, next) => {
               anniversaryData.map(async item => {
                 item.date = yyyymmddNumToDate(item.locdate);
                 await Holiday.findOneAndUpdate(
-                  { dateName: item.dateName, date: item.date, isHoliday: true },
+                  { dateName: item.dateName, date: item.date, isHoliday: false },
                   {},
                   { new: true, upsert: true, setDefaultsOnInsert: true }
                 );
