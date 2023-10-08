@@ -23,7 +23,7 @@ app.use(
   })
 );
 
-// setSchedule.saveHolidayInfoJob();
+setSchedule.updateHolidayInfoJob();
 
 app.use("/", router);
 
