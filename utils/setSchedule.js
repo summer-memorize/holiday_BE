@@ -1,22 +1,14 @@
 const schedule = require("node-schedule");
 const request = require("request");
 const Holiday = require("../schemas/holiday");
+const SaveResult = require("../schemas/saveResult");
 require("dotenv").config();
 
 const openApiKey = process.env.OPEN_API_KEY;
 
-//* 0시 10분 1초마다 이뤄지는 일
-const rule = new schedule.RecurrenceRule();
-const ss = 1;
-const mm = 10;
-const hh = 0;
-rule.second = ss;
-rule.minute = mm;
-rule.hour = hh;
-
 const updateHolidayInfoJob = () => {
   try {
-    schedule.scheduleJob(rule, async () => {
+    schedule.scheduleJob("10 1 * * *", async () => {
       console.log("updateHolidayInfoJob", new Date());
 
       const yyyymmddNumToDate = num => {
@@ -96,4 +88,130 @@ const updateHolidayInfoJob = () => {
   }
 };
 
-module.exports = { updateHolidayInfoJob };
+const saveHolidayInfoJob = () => {
+  try {
+    schedule.scheduleJob("30 2 * * *", async () => {
+      console.log("saveHolidayInfoJob", new Date());
+
+      const yyyymmddNumToDate = num => {
+        const year = parseInt(num / 10000);
+        const month = parseInt((num % 10000) / 100);
+        const day = parseInt(num % 100);
+        return new Date(year, month - 1, day);
+      };
+
+      // TODO: 저장 안 된 달 찾아서 저장
+      const year = 2005;
+      const monthArr = ["01", "02", "03", "04", "05", "06", "07", "08", "09", "10", "11", "12"];
+      const month = "09";
+
+      const saveResult = await SaveResult.findOne({
+        year,
+        month,
+      });
+
+      let restDayUrl = "http://apis.data.go.kr/B090041/openapi/service/SpcdeInfoService/getRestDeInfo";
+      let anniversaryUrl = "http://apis.data.go.kr/B090041/openapi/service/SpcdeInfoService/getAnniversaryInfo";
+      let queryParams = "?" + encodeURIComponent("serviceKey") + "=" + openApiKey;
+      queryParams += "&" + encodeURIComponent("numOfRows") + "=" + encodeURIComponent("10"); /* */
+      queryParams += "&" + encodeURIComponent("solYear") + "=" + encodeURIComponent(year); /* */
+      queryParams += "&" + encodeURIComponent("solMonth") + "=" + encodeURIComponent(month); /* */
+      queryParams += "&" + encodeURIComponent("_type") + "=" + encodeURIComponent("json"); /* */
+
+      const saveRestDayInfo = async () => {
+        request(
+          {
+            url: restDayUrl + queryParams,
+            method: "GET",
+          },
+          async function (error, response, body) {
+            if (error) {
+              console.error(222, "scheduler 공휴일 정보 요청 에러", error?.code, "\r\n");
+              await saveRestDayInfo();
+            } else {
+              console.log(123, year, month, "공휴일 개수: ", JSON.parse(body).response.body.totalCount);
+              // db 저장
+              if (JSON.parse(body).response.body.totalCount > 0) {
+                let holidayData = JSON.parse(body).response.body.items.item;
+
+                if (!Array.isArray(holidayData)) holidayData = [holidayData];
+
+                holidayData.map(async item => {
+                  item.date = yyyymmddNumToDate(item.locdate);
+                  await Holiday.findOneAndUpdate(
+                    { dateName: item.dateName, date: item.date, isHoliday: true },
+                    {},
+                    { new: true, upsert: true, setDefaultsOnInsert: true }
+                  );
+                });
+
+                // saveResult findOneAndUpdate
+                await SaveResult.findOneAndUpdate(
+                  { year, month },
+                  { isRestDaySaved: true },
+                  { new: true, upsert: true, setDefaultsOnInsert: true }
+                );
+
+                console.log(111, "scheduler saveRestDayInfo 갱신 완료\r\n");
+              }
+            }
+          }
+        );
+      };
+
+      const saveAnniversaryInfo = async () => {
+        request(
+          {
+            url: anniversaryUrl + queryParams,
+            method: "GET",
+          },
+          async function (error, response, body) {
+            if (error) {
+              console.error(444, "scheduler 기념일 정보 요청 에러", error?.code, "\r\n");
+              await saveAnniversaryInfo();
+            } else {
+              console.log(123, year, month, "기념일 개수: ", JSON.parse(body).response.body.totalCount);
+
+              // db 저장
+              if (JSON.parse(body).response.body.totalCount > 0) {
+                let anniversaryData = JSON.parse(body).response.body.items.item;
+
+                if (!Array.isArray(anniversaryData)) anniversaryData = [anniversaryData];
+
+                anniversaryData.map(async item => {
+                  item.date = yyyymmddNumToDate(item.locdate);
+                  await Holiday.findOneAndUpdate(
+                    { dateName: item.dateName, date: item.date, isHoliday: false },
+                    {},
+                    { new: true, upsert: true, setDefaultsOnInsert: true }
+                  );
+                });
+
+                // saveResult findOneAndUpdate
+                await SaveResult.findOneAndUpdate(
+                  { year, month },
+                  { isAnniversarySaved: true },
+                  { new: true, upsert: true, setDefaultsOnInsert: true }
+                );
+
+                console.log(333, "scheduler saveAnniversaryInfo 갱신 완료\r\n");
+              }
+            }
+          }
+        );
+      };
+
+      if (!saveResult?.isRestDaySaved) {
+        saveRestDayInfo();
+      }
+
+      if (!saveResult?.isAnniversarySaved) {
+        saveAnniversaryInfo();
+      }
+    });
+  } catch (err) {
+    console.error(555, "saveHolidayInfoJob 에러\r\n", err);
+  }
+};
+
+module.exports = { updateHolidayInfoJob, saveHolidayInfoJob };

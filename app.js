@@ -27,6 +27,7 @@ app.use(
 );
 
 setSchedule.updateHolidayInfoJob();
+setSchedule.saveHolidayInfoJob();
 
 app.use("/", router);
 app.use(errorHandler);
