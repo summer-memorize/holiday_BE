@@ -105,7 +105,7 @@ router.get("/", async (req, res, next) => {
 
             console.log(12121212, "isComplete 개수:", isComplete);
 
-            if (isComplete === 2) {
+            if (isComplete === 2 || (isComplete === 1 && saveResult.isAnniversarySaved)) {
               const holidayInfo = await Holiday.find({
                 date: {
                   $gte: new Date(year, month - 2, 15),
@@ -187,7 +187,7 @@ router.get("/", async (req, res, next) => {
 
             console.log(12121212, "isComplete 개수:", isComplete);
 
-            if (isComplete === 2) {
+            if (isComplete === 2 || (isComplete === 1 && saveResult.isRestDaySaved)) {
               const holidayInfo = await Holiday.find({
                 date: {
                   $gte: new Date(year, month - 2, 15),
