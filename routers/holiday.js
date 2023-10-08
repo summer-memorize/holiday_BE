@@ -65,7 +65,7 @@ router.get("/", async (req, res, next) => {
     let isComplete = 0;
 
     // 공휴일 정보
-    const getRestDayInfo = async () => {
+    const getRestDayInfo = async isAnniversarySaved => {
       request(
         {
           url: restDayUrl + queryParams,
@@ -74,7 +74,7 @@ router.get("/", async (req, res, next) => {
         async function (error, response, body) {
           if (error) {
             console.error(222, "공휴일 정보 에러", error?.code, "\r\n");
-            await getRestDayInfo();
+            await getRestDayInfo(isAnniversarySaved);
           } else {
             console.log(123, "공휴일 개수: ", JSON.parse(body).response.body.totalCount);
 
@@ -105,7 +105,7 @@ router.get("/", async (req, res, next) => {
 
             console.log(12121212, "isComplete 개수:", isComplete);
 
-            if (isComplete === 2 || (isComplete === 1 && saveResult.isAnniversarySaved)) {
+            if (isComplete === 2 || (isComplete === 1 && isAnniversarySaved)) {
               const holidayInfo = await Holiday.find({
                 date: {
                   $gte: new Date(year, month - 2, 15),
@@ -147,7 +147,7 @@ router.get("/", async (req, res, next) => {
     };
 
     // 기념일 정보
-    const getAnniversaryInfo = async () => {
+    const getAnniversaryInfo = async isRestDaySaved => {
       request(
         {
           url: anniversaryUrl + queryParams,
@@ -156,7 +156,7 @@ router.get("/", async (req, res, next) => {
         async function (error, response, body) {
           if (error) {
             console.error(444, "기념일 정보 에러", error?.code, "\r\n");
-            await getAnniversaryInfo();
+            await getAnniversaryInfo(isRestDaySaved);
           } else {
             console.log(123, "기념일 개수: ", JSON.parse(body).response.body.totalCount);
 
@@ -187,7 +187,7 @@ router.get("/", async (req, res, next) => {
 
             console.log(12121212, "isComplete 개수:", isComplete);
 
-            if (isComplete === 2 || (isComplete === 1 && saveResult.isRestDaySaved)) {
+            if (isComplete === 2 || (isComplete === 1 && isRestDaySaved)) {
               const holidayInfo = await Holiday.find({
                 date: {
                   $gte: new Date(year, month - 2, 15),
@@ -229,12 +229,14 @@ router.get("/", async (req, res, next) => {
     };
 
     // saveResult 없으면
-    if (!saveResult || !saveResult.isRestDaySaved) {
-      await getRestDayInfo();
+    if (!saveResult?.isRestDaySaved) {
+      const isAnniversarySaved = saveResult?.isAnniversarySaved ? true : false;
+      await getRestDayInfo(isAnniversarySaved);
     }
 
-    if (!saveResult || !saveResult.isAnniversarySaved) {
-      await getAnniversaryInfo();
+    if (!saveResult?.isAnniversarySaved) {
+      const isRestDaySaved = saveResult?.isRestDaySaved ? true : false;
+      await getAnniversaryInfo(isRestDaySaved);
     }
 
     if (saveResult && saveResult.isRestDaySaved && saveResult.isAnniversarySaved) {
