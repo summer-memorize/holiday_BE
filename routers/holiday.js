@@ -81,7 +81,7 @@ router.get("/", async (req, res, next) => {
                 },
               }).sort("date");
 
-              res.status(200).json({ message: "test", data: holidayInfo });
+              res.status(200).json({ data: holidayInfo });
             }
           }
         }
@@ -161,7 +161,7 @@ router.get("/", async (req, res, next) => {
                 },
               }).sort("date");
 
-              res.status(200).json({ message: "test", data: holidayInfo });
+              res.status(200).json({ data: holidayInfo });
             }
           }
         }
@@ -211,7 +211,7 @@ router.get("/", async (req, res, next) => {
         },
       }).sort("date");
 
-      res.status(200).json({ message: "test", data: holidayInfo });
+      res.status(200).json({ data: holidayInfo });
     }
   } catch (err) {
     next(err);
