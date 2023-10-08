@@ -1,7 +1,7 @@
 const express = require("express");
 // const axios = require("axios");
 // const fetch = require("node-fetch");
-const request = require("request-promise");
+const request = require("request");
 const Holiday = require("../schemas/holiday");
 const SaveResult = require("../schemas/saveResult");
 const router = express.Router();
@@ -64,7 +64,7 @@ router.get("/test", async (req, res, next) => {
 
               holidayData.map(item => {
                 item.date = yyyymmddNumToDate(item.locdate);
-                item.isHoliday = item.isHoliday === "Y" ? true : false;
+                item.isHoliday = true;
               });
 
               await Holiday.insertMany(holidayData);
@@ -144,7 +144,7 @@ router.get("/test", async (req, res, next) => {
 
               anniversaryData.map(item => {
                 item.date = yyyymmddNumToDate(item.locdate);
-                item.isHoliday = item.isHoliday === "Y" ? true : false;
+                item.isHoliday = false;
               });
 
               await Holiday.insertMany(anniversaryData);
