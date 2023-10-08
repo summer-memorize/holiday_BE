@@ -10,14 +10,6 @@ const openApiKey = process.env.OPEN_API_KEY;
 
 router.get("/", async (req, res, next) => {
   try {
-    res.status(201).json({ message: "ok" });
-  } catch (err) {
-    next(err);
-  }
-});
-
-router.get("/test", async (req, res, next) => {
-  try {
     const yyyymmddNumToDate = num => {
       const year = parseInt(num / 10000);
       const month = parseInt((num % 10000) / 100);
