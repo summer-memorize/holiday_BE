@@ -75,7 +75,6 @@ const updateHolidayInfoJob = () => {
 
                 holidayData.map(async item => {
                   item.date = yyyymmddNumToDate(item.locdate);
-                  item.isHoliday = true;
                   await Holiday.findOneAndUpdate(
                     { dateName: item.dateName, date: item.date, isHoliday: true },
                     {},

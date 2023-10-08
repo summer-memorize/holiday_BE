@@ -32,6 +32,8 @@ router.get("/", async (req, res, next) => {
 
     const { year, month } = await holidaySchema.validateAsync(req.query);
 
+    if (parseInt(year) < 1900 || parseInt(year) > 2300) return res.status(200).json({ data: [] });
+
     const yyyymmddNumToDate = num => {
       const year = parseInt(num / 10000);
       const month = parseInt((num % 10000) / 100);
@@ -72,7 +74,7 @@ router.get("/", async (req, res, next) => {
             console.error(222, "공휴일 정보 에러", error?.code, "\r\n");
             await getRestDayInfo();
           } else {
-            console.log(123, "개수: ", JSON.parse(body).response.body.totalCount);
+            console.log(123, "공휴일 개수: ", JSON.parse(body).response.body.totalCount);
 
             // db 저장
             if (JSON.parse(body).response.body.totalCount > 0) {
@@ -80,12 +82,14 @@ router.get("/", async (req, res, next) => {
 
               if (!Array.isArray(holidayData)) holidayData = [holidayData];
 
-              holidayData.map(item => {
+              holidayData.map(async item => {
                 item.date = yyyymmddNumToDate(item.locdate);
-                item.isHoliday = true;
+                await Holiday.findOneAndUpdate(
+                  { dateName: item.dateName, date: item.date, isHoliday: true },
+                  {},
+                  { new: true, upsert: true, setDefaultsOnInsert: true }
+                );
               });
-
-              await Holiday.insertMany(holidayData);
             }
 
             // saveResult findOneAndUpdate
@@ -152,7 +156,7 @@ router.get("/", async (req, res, next) => {
             console.error(444, "기념일 정보 에러", error?.code, "\r\n");
             await getAnniversaryInfo();
           } else {
-            console.log(123, "개수: ", JSON.parse(body).response.body.totalCount);
+            console.log(123, "기념일 개수: ", JSON.parse(body).response.body.totalCount);
 
             // db 저장
             if (JSON.parse(body).response.body.totalCount > 0) {
@@ -160,12 +164,14 @@ router.get("/", async (req, res, next) => {
 
               if (!Array.isArray(anniversaryData)) anniversaryData = [anniversaryData];
 
-              anniversaryData.map(item => {
+              anniversaryData.map(async item => {
                 item.date = yyyymmddNumToDate(item.locdate);
-                item.isHoliday = false;
+                await Holiday.findOneAndUpdate(
+                  { dateName: item.dateName, date: item.date, isHoliday: true },
+                  {},
+                  { new: true, upsert: true, setDefaultsOnInsert: true }
+                );
               });
-
-              await Holiday.insertMany(anniversaryData);
             }
 
             // saveResult findOneAndUpdate
