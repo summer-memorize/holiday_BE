@@ -32,7 +32,9 @@ router.get("/", async (req, res, next) => {
 
     const { year, month } = await holidaySchema.validateAsync(req.query);
 
-    if (parseInt(year) < 1900 || parseInt(year) > 2300) return res.status(200).json({ data: [] });
+    // 2023년 기준 2005년부터 2025년까지 공휴일 정보만 있음
+    // TODO: 미래의 연도는 하드코딩으로 넣으면 안 될 듯. 수정 필요
+    if (parseInt(year) < 2005 || parseInt(year) > 2025) return res.status(200).json({ data: [] });
 
     const yyyymmddNumToDate = num => {
       const year = parseInt(num / 10000);
