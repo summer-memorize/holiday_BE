@@ -5,7 +5,7 @@ const dbUrl = `mongodb+srv://${process.env.DB_USER_NAME}:${process.env.DB_PASSWO
 
 const connect = () => {
   if (process.env.NODE_ENV !== "production") {
-    mongoose.set("debug", true);
+    mongoose.set("debug", false);
   }
   mongoose
     .connect(dbUrl, {
