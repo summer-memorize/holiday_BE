@@ -1,18 +1,29 @@
 const express = require("express");
 const morgan = require("morgan");
+const cors = require("cors");
 const connect = require("./schemas");
+const setSchedule = require("./utils/setSchedule");
 const router = require("./routers");
 require("dotenv").config();
 
 const app = express();
 
-const port = process.env.PORT || 8888;
+const port = process.env.PORT || 3001;
 app.set("port", port);
 connect();
 
 app.use(morgan("dev"));
 app.use(express.json());
-app.use(express.urlencoded({ extended: false }));
+app.use(express.urlencoded({ extended: true }));
+app.use(
+  cors({
+    // origin: true,
+    credentials: true,
+    // origin: ["http://localhost:3001"],
+  })
+);
+
+// setSchedule.saveHolidayInfoJob();
 
 app.use("/", router);
 
