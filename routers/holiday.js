@@ -1,7 +1,5 @@
 const express = require("express");
-// const axios = require("axios");
-// const fetch = require("node-fetch");
-const request = require("request");
+const axios = require("axios");
 const joi = require("joi");
 const Holiday = require("../schemas/holiday");
 const SaveResult = require("../schemas/saveResult");
@@ -36,7 +34,7 @@ router.get("/", async (req, res, next) => {
     const diffYear = () => new Date().getFullYear() - 2023;
     if (parseInt(year) < 2005 || parseInt(year) > 2025 + diffYear()) return res.status(200).json({ data: [] });
 
-    const yyyymmddNumToDate = num => {
+    const yyyymmddNumToDate = (num) => {
       const year = parseInt(num / 10000);
       const month = parseInt((num % 10000) / 100);
       const day = parseInt(num % 100);
@@ -47,13 +45,8 @@ router.get("/", async (req, res, next) => {
       return kstDate;
     };
 
-    let restDayUrl = "http://apis.data.go.kr/B090041/openapi/service/SpcdeInfoService/getRestDeInfo";
-    let anniversaryUrl = "http://apis.data.go.kr/B090041/openapi/service/SpcdeInfoService/getAnniversaryInfo";
-    let queryParams = "?" + encodeURIComponent("serviceKey") + "=" + openApiKey;
-    queryParams += "&" + encodeURIComponent("numOfRows") + "=" + encodeURIComponent("50"); /* */
-    queryParams += "&" + encodeURIComponent("solYear") + "=" + encodeURIComponent(year); /* */
-    queryParams += "&" + encodeURIComponent("solMonth") + "=" + encodeURIComponent(month); /* */
-    queryParams += "&" + encodeURIComponent("_type") + "=" + encodeURIComponent("json"); /* */
+    const restDayUrl = `http://apis.data.go.kr/B090041/openapi/service/SpcdeInfoService/getRestDeInfo?numOfRows=50&_type=json&solYear=${year}&solMonth=${month}&ServiceKey=${openApiKey}`;
+    const anniversaryUrl = `http://apis.data.go.kr/B090041/openapi/service/SpcdeInfoService/getAnniversaryInfo?numOfRows=50&_type=json&solYear=${year}&solMonth=${month}&ServiceKey=${openApiKey}`;
 
     // 해당 month 저장 됐는지 확인
     const saveResult = await SaveResult.findOne({
@@ -65,181 +58,94 @@ router.get("/", async (req, res, next) => {
     let isComplete = 0;
 
     // 공휴일 정보
-    const getRestDayInfo = async isAnniversarySaved => {
-      request(
-        {
-          url: restDayUrl + queryParams,
-          method: "GET",
-        },
-        async function (error, response, body) {
-          if (error) {
-            console.error(222, "공휴일 정보 에러", error?.code, "\r\n");
-            await getRestDayInfo(isAnniversarySaved);
-          } else {
-            console.log(123, "공휴일 개수: ", JSON.parse(body).response.body.totalCount);
+    const getRestDayInfo = async () => {
+      try {
+        const { data } = await axios.get(restDayUrl);
+        console.log(123, year, month, "공휴일 개수: ", data.response.body.totalCount);
 
-            // db 저장
-            if (JSON.parse(body).response.body.totalCount > 0) {
-              let holidayData = JSON.parse(body).response.body.items.item;
+        // db 저장
+        if (data.response.body.totalCount > 0) {
+          let holidayData = data.response.body.items.item;
 
-              if (!Array.isArray(holidayData)) holidayData = [holidayData];
+          if (!Array.isArray(holidayData)) holidayData = [holidayData];
 
-              holidayData.map(async item => {
-                item.date = yyyymmddNumToDate(item.locdate);
-                await Holiday.findOneAndUpdate(
-                  { dateName: item.dateName, date: item.date, isHoliday: true },
-                  {},
-                  { new: true, upsert: true, setDefaultsOnInsert: true }
-                );
-              });
-            }
-
-            // saveResult findOneAndUpdate
-            await SaveResult.findOneAndUpdate(
-              { year, month },
-              { isRestDaySaved: true },
+          holidayData.map(async (item) => {
+            item.date = yyyymmddNumToDate(item.locdate);
+            await Holiday.findOneAndUpdate(
+              { dateName: item.dateName, date: item.date, isHoliday: true },
+              {},
               { new: true, upsert: true, setDefaultsOnInsert: true }
             );
-
-            isComplete++;
-
-            console.log(12121212, "isComplete 개수:", isComplete);
-
-            if (isComplete === 2 || (isComplete === 1 && isAnniversarySaved)) {
-              const holidayInfo = await Holiday.find({
-                date: {
-                  $gte: new Date(year, month - 2, 15),
-                  $lte: new Date(year, month, 15),
-                },
-              }).sort("date");
-
-              res.status(200).json({ data: holidayInfo });
-            }
-          }
+          });
         }
-      );
 
-      // try {
-      //   const response = await fetch(restDayUrl + queryParams);
+        // saveResult findOneAndUpdate
+        await SaveResult.findOneAndUpdate(
+          { year, month },
+          { isRestDaySaved: true },
+          { new: true, upsert: true, setDefaultsOnInsert: true }
+        );
 
-      //   // db 저장
-      //   const holidayData = (await response.json()).response.body.items.item;
-
-      //   if (!Array.isArray(holidayData)) holidayData = [holidayData];
-
-      //   holidayData.map(item => {
-      //     item.date = yyyymmddNumToDate(item.locdate);
-      //     item.isHoliday = item.isHoliday === "Y" ? true : false;
-      //   });
-
-      //   await Holiday.insertMany(holidayData);
-
-      //   // saveResult findOneAndUpdate
-      //   await SaveResult.findOneAndUpdate(
-      //     { year, month },
-      //     { isRestDaySaved: true },
-      //     { new: true, upsert: true, setDefaultsOnInsert: true }
-      //   );
-      // } catch (error) {
-      //   console.error(222, "공휴일 정보 에러", error, "\r\n");
-      //   await getRestDayInfo();
-      // }
+        return { result: "complete" };
+      } catch (err) {
+        console.error(222, year, month, "공휴일 정보 에러", err?.code, "\r\n");
+        err?.name === "AxiosError" ? await getRestDayInfo() : next(err);
+      }
     };
 
     // 기념일 정보
-    const getAnniversaryInfo = async isRestDaySaved => {
-      request(
-        {
-          url: anniversaryUrl + queryParams,
-          method: "GET",
-        },
-        async function (error, response, body) {
-          if (error) {
-            console.error(444, "기념일 정보 에러", error?.code, "\r\n");
-            await getAnniversaryInfo(isRestDaySaved);
-          } else {
-            console.log(123, "기념일 개수: ", JSON.parse(body).response.body.totalCount);
+    const getAnniversaryInfo = async () => {
+      try {
+        const { data } = await axios.get(anniversaryUrl);
+        console.log(123, year, month, "기념일 개수: ", data.response.body.totalCount);
 
-            // db 저장
-            if (JSON.parse(body).response.body.totalCount > 0) {
-              let anniversaryData = JSON.parse(body).response.body.items.item;
+        // db 저장
+        if (data.response.body.totalCount > 0) {
+          let anniversaryData = data.response.body.items.item;
 
-              if (!Array.isArray(anniversaryData)) anniversaryData = [anniversaryData];
+          if (!Array.isArray(anniversaryData)) anniversaryData = [anniversaryData];
 
-              anniversaryData.map(async item => {
-                item.date = yyyymmddNumToDate(item.locdate);
-                await Holiday.findOneAndUpdate(
-                  { dateName: item.dateName, date: item.date, isHoliday: false },
-                  {},
-                  { new: true, upsert: true, setDefaultsOnInsert: true }
-                );
-              });
-            }
-
-            // saveResult findOneAndUpdate
-            await SaveResult.findOneAndUpdate(
-              { year, month },
-              { isAnniversarySaved: true },
+          anniversaryData.map(async (item) => {
+            item.date = yyyymmddNumToDate(item.locdate);
+            await Holiday.findOneAndUpdate(
+              { dateName: item.dateName, date: item.date, isHoliday: false },
+              {},
               { new: true, upsert: true, setDefaultsOnInsert: true }
             );
-
-            isComplete++;
-
-            console.log(12121212, "isComplete 개수:", isComplete);
-
-            if (isComplete === 2 || (isComplete === 1 && isRestDaySaved)) {
-              const holidayInfo = await Holiday.find({
-                date: {
-                  $gte: new Date(year, month - 2, 15),
-                  $lte: new Date(year, month, 15),
-                },
-              }).sort("date");
-
-              res.status(200).json({ data: holidayInfo });
-            }
-          }
+          });
         }
-      );
 
-      // try {
-      //   const response = await fetch(anniversaryUrl + queryParams);
+        // saveResult findOneAndUpdate
+        await SaveResult.findOneAndUpdate(
+          { year, month },
+          { isAnniversarySaved: true },
+          { new: true, upsert: true, setDefaultsOnInsert: true }
+        );
 
-      //   // db 저장
-      //   const anniversaryData = (await response.json()).response.body.items.item;
-
-      //   if (!Array.isArray(anniversaryData)) anniversaryData = [anniversaryData];
-
-      //   anniversaryData.map(item => {
-      //     item.date = yyyymmddNumToDate(item.locdate);
-      //     item.isHoliday = item.isHoliday === "Y" ? true : false;
-      //   });
-
-      //   await Holiday.insertMany(anniversaryData);
-
-      //   // saveResult findOneAndUpdate;
-      //   await SaveResult.findOneAndUpdate(
-      //     { year, month },
-      //     { isAnniversarySaved: true },
-      //     { new: true, upsert: true, setDefaultsOnInsert: true }
-      //   );
-      // } catch (error) {
-      //   console.error(444, "기념일 정보 에러", error, "\r\n");
-      //   await getAnniversaryInfo();
-      // }
+        return { result: "complete" };
+      } catch (err) {
+        // axios 에러 시 재요청
+        console.error(444, year, month, "기념일 정보 에러", err?.code, "\r\n");
+        err?.name === "AxiosError" ? await getAnniversaryInfo() : next(err);
+      }
     };
 
     // saveResult 없으면
     if (!saveResult?.isRestDaySaved) {
-      const isAnniversarySaved = saveResult?.isAnniversarySaved ? true : false;
-      await getRestDayInfo(isAnniversarySaved);
+      // const isAnniversarySaved = saveResult?.isAnniversarySaved ? true : false;
+      const getRestDay = await getRestDayInfo();
+      if (getRestDay?.result === "complete") isComplete++;
     }
+    if (saveResult?.isRestDaySaved) isComplete++;
 
     if (!saveResult?.isAnniversarySaved) {
-      const isRestDaySaved = saveResult?.isRestDaySaved ? true : false;
-      await getAnniversaryInfo(isRestDaySaved);
+      // const isRestDaySaved = saveResult?.isRestDaySaved ? true : false;
+      const getAnniversary = await getAnniversaryInfo();
+      if (getAnniversary?.result === "complete") isComplete++;
     }
+    if (saveResult?.isAnniversarySaved) isComplete++;
 
-    if (saveResult && saveResult.isRestDaySaved && saveResult.isAnniversarySaved) {
+    if (isComplete === 2) {
       const holidayInfo = await Holiday.find({
         date: {
           $gte: new Date(year, month - 2, 15),
