@@ -14,9 +14,17 @@ app.set("port", port);
 app.set("trust proxy", true);
 connect();
 
+morgan.token("date", function () {
+  const p = new Date()
+    .toString()
+    .replace(/[A-Z]{3}\+/, "+")
+    .split(/ /);
+  return `${p[2]}/${p[1]}/${p[3]}:${p[4]}`;
+});
+
 app.use(
   morgan(
-    ":remote-addr :remote-user :method :url HTTP/:http-version :status :res[content-length] :response-time :referrer :user-agent"
+    "[:date[clf]] :remote-addr :remote-user :method :url HTTP/:http-version :status :res[content-length] :response-time ms :referrer :user-agent"
   )
 );
 app.use(express.json());
