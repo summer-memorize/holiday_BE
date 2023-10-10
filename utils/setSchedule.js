@@ -2,6 +2,7 @@ const schedule = require("node-schedule");
 const axios = require("axios");
 const Holiday = require("../schemas/holiday");
 const SaveResult = require("../schemas/saveResult");
+const { yyyymmddNumToDate } = require("./date");
 require("dotenv").config();
 
 const openApiKey = process.env.OPEN_API_KEY;
@@ -10,17 +11,6 @@ const updateHolidayInfoJob = () => {
   try {
     schedule.scheduleJob("10 1 * * *", async () => {
       console.log("updateHolidayInfoJob", new Date());
-
-      const yyyymmddNumToDate = (num) => {
-        const year = parseInt(num / 10000);
-        const month = parseInt((num % 10000) / 100);
-        const day = parseInt(num % 100);
-        const utcDate = new Date(year, month - 1, day);
-        const kstOffset = 9 * 60 * 60 * 1000;
-        const kstDate = new Date(utcDate.getTime() + kstOffset);
-
-        return kstDate;
-      };
 
       const year = new Date().getFullYear();
       let month = new Date().getMonth() + 1;
@@ -88,27 +78,15 @@ const saveHolidayInfoJob = () => {
     schedule.scheduleJob("30 2 * * *", async () => {
       console.log("saveHolidayInfoJob", new Date());
 
-      const yyyymmddNumToDate = (num) => {
-        const year = parseInt(num / 10000);
-        const month = parseInt((num % 10000) / 100);
-        const day = parseInt(num % 100);
-        const utcDate = new Date(year, month - 1, day);
-        const kstOffset = 9 * 60 * 60 * 1000;
-        const kstDate = new Date(utcDate.getTime() + kstOffset);
-
-        return kstDate;
-      };
-
       const diffInDays = (today, pastDate) => Math.round(Math.abs((today - pastDate) / (1000 * 60 * 60 * 24)));
 
       // 저장 안 된 달 찾아서 저장
       const monthArr = ["01", "02", "03", "04", "05", "06", "07", "08", "09", "10", "11", "12"];
-      const startDay = new Date("2023-10-10"); // 2023년 10월 10일에 저장 시작
+      const startDay = new Date("2023-10-09"); // 2023년 10월 9일에 저장 시작
       let year, month;
 
       for (let j = 0, jl = monthArr.length; j < jl; j++) {
-        // year = 2006 + diffInDays(new Date(), startDay);
-        year = 2018;
+        year = 2005 + diffInDays(new Date(), startDay);
         month = monthArr[j];
 
         // 현재 공공데이터포털 api에서 2025년까지만 공휴일 정보 제공

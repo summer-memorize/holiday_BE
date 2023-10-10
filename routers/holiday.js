@@ -3,6 +3,7 @@ const axios = require("axios");
 const joi = require("joi");
 const Holiday = require("../schemas/holiday");
 const SaveResult = require("../schemas/saveResult");
+const { yyyymmddNumToDate } = require("../utils/date");
 const router = express.Router();
 
 const openApiKey = process.env.OPEN_API_KEY;
@@ -33,17 +34,6 @@ router.get("/", async (req, res, next) => {
     // 2023년 기준 공공데이터포털에서 2005년부터 2025년까지 공휴일 정보만 제공
     const diffYear = () => new Date().getFullYear() - 2023;
     if (parseInt(year) < 2005 || parseInt(year) > 2025 + diffYear()) return res.status(200).json({ data: [] });
-
-    const yyyymmddNumToDate = (num) => {
-      const year = parseInt(num / 10000);
-      const month = parseInt((num % 10000) / 100);
-      const day = parseInt(num % 100);
-      const utcDate = new Date(year, month - 1, day);
-      const kstOffset = 9 * 60 * 60 * 1000;
-      const kstDate = new Date(utcDate.getTime() + kstOffset);
-
-      return kstDate;
-    };
 
     const restDayUrl = `http://apis.data.go.kr/B090041/openapi/service/SpcdeInfoService/getRestDeInfo?numOfRows=50&_type=json&solYear=${year}&solMonth=${month}&ServiceKey=${openApiKey}`;
     const anniversaryUrl = `http://apis.data.go.kr/B090041/openapi/service/SpcdeInfoService/getAnniversaryInfo?numOfRows=50&_type=json&solYear=${year}&solMonth=${month}&ServiceKey=${openApiKey}`;
@@ -130,20 +120,15 @@ router.get("/", async (req, res, next) => {
       }
     };
 
-    // saveResult 없으면
     if (!saveResult?.isRestDaySaved) {
-      // const isAnniversarySaved = saveResult?.isAnniversarySaved ? true : false;
       const getRestDay = await getRestDayInfo();
       if (getRestDay?.result === "complete") isComplete++;
-    }
-    if (saveResult?.isRestDaySaved) isComplete++;
+    } else isComplete++;
 
     if (!saveResult?.isAnniversarySaved) {
-      // const isRestDaySaved = saveResult?.isRestDaySaved ? true : false;
       const getAnniversary = await getAnniversaryInfo();
       if (getAnniversary?.result === "complete") isComplete++;
-    }
-    if (saveResult?.isAnniversarySaved) isComplete++;
+    } else isComplete++;
 
     if (isComplete === 2) {
       const holidayInfo = await Holiday.find({
