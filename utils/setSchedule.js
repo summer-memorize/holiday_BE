@@ -156,16 +156,16 @@ const saveHolidayInfoJob = () => {
                       { new: true, upsert: true, setDefaultsOnInsert: true }
                     );
                   });
-
-                  // saveResult findOneAndUpdate
-                  await SaveResult.findOneAndUpdate(
-                    { year, month },
-                    { isRestDaySaved: true },
-                    { new: true, upsert: true, setDefaultsOnInsert: true }
-                  );
-
-                  console.log(111, "scheduler saveRestDayInfo 갱신 완료\r\n");
                 }
+
+                // saveResult findOneAndUpdate
+                await SaveResult.findOneAndUpdate(
+                  { year, month },
+                  { isRestDaySaved: true },
+                  { new: true, upsert: true, setDefaultsOnInsert: true }
+                );
+
+                console.log(111, "scheduler saveRestDayInfo 갱신 완료\r\n");
               }
             }
           );
@@ -198,16 +198,16 @@ const saveHolidayInfoJob = () => {
                       { new: true, upsert: true, setDefaultsOnInsert: true }
                     );
                   });
-
-                  // saveResult findOneAndUpdate
-                  await SaveResult.findOneAndUpdate(
-                    { year, month },
-                    { isAnniversarySaved: true },
-                    { new: true, upsert: true, setDefaultsOnInsert: true }
-                  );
-
-                  console.log(333, "scheduler saveAnniversaryInfo 갱신 완료\r\n");
                 }
+
+                // saveResult findOneAndUpdate
+                await SaveResult.findOneAndUpdate(
+                  { year, month },
+                  { isAnniversarySaved: true },
+                  { new: true, upsert: true, setDefaultsOnInsert: true }
+                );
+
+                console.log(333, "scheduler saveAnniversaryInfo 갱신 완료\r\n");
               }
             }
           );
