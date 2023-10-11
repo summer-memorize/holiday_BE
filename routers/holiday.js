@@ -138,7 +138,12 @@ router.get("/", async (req, res, next) => {
         },
       }).sort("date");
 
-      res.status(200).json({ data: holidayInfo });
+      const data = holidayInfo.map((item) => {
+        const { dateName, date, isHoliday } = item;
+        return { dateName, date, isHoliday };
+      });
+
+      res.status(200).json({ data });
     }
   } catch (err) {
     next(err);
