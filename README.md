@@ -8,7 +8,7 @@
 
 ## Base URL
 
-`도메인 연결 전입니다. 잠시만 기다려 주세요.`
+`https://gutjqjwldb.me`
 
 ## Endpoints
 
