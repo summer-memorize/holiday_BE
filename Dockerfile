@@ -12,7 +12,7 @@ COPY package*.json ./
 RUN npm install
 
 # pm2 설치
-RUN sudo npm install pm2 -g
+RUN npm install pm2 -g
 
 # 앱 소스 추가
 COPY . .
