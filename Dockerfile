@@ -14,11 +14,5 @@ RUN npm install
 # 앱 소스 추가
 COPY app.js ./
 
-# 디폴트 값 설정
-ENV PORT 8080
-
-# 앱이 해당 포트에서 실행될 것임을 명시하기
-EXPOSE $PORT
-
 # 앱 실행
 CMD [ "node", "app.js" ]
