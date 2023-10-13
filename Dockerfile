@@ -11,8 +11,11 @@ COPY package*.json ./
 # package.json에 있는 프로젝트 의존성 설치
 RUN npm install
 
+# pm2 설치
+RUN npm install pm2 -g
+
 # 앱 소스 추가
 COPY . .
 
-# 앱 실행
-CMD [ "node", "app.js" ]
+# pm2를 사용해서 Express 앱 실행
+CMD [ "pm2-runtime", "start", "app.js", "--cron-restart", "0 0 * * *" ]
