@@ -12,7 +12,7 @@ COPY package*.json ./
 RUN npm install
 
 # 앱 소스 추가
-COPY app.js ./
+COPY . .
 
 # 앱 실행
 CMD [ "node", "app.js" ]
