@@ -18,4 +18,4 @@ RUN npm install pm2 -g
 COPY . .
 
 # pm2를 사용해서 Express 앱 실행
-CMD [ "pm2-runtime", "start", "app.js", "--cron-restart", "0 0 * * *" ]
+CMD [ "pm2", "start", "app.js", "--cron-restart", "0 0 * * *", "-f"  ]
