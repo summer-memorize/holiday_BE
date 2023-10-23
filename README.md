@@ -6,10 +6,6 @@
 
 공휴일 정보를 얻기 위한 API입니다.
 
-## Base URL
-
-`https://gutjqjwldb.me`
-
 ## Endpoints
 
 ### GET /holiday
